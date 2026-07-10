@@ -1018,7 +1018,26 @@
 
   </div>
 
-  <script>
+  <script type="module">
+    // Import the functions you need from the SDKs you need
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-app.js";
+    import { getFirestore, collection, addDoc, onSnapshot, query, orderBy, deleteDoc, doc, getDocs } from "https://www.gstatic.com/firebasejs/12.16.0/firebase-firestore.js";
+
+    // Your web app's Firebase configuration
+    const firebaseConfig = {
+      apiKey: "AIzaSyDSv2f87M7GiP7Eq37GYb1XtuytIaxTdrc",
+      authDomain: "gasolinacontraalcool.firebaseapp.com",
+      projectId: "gasolinacontraalcool",
+      storageBucket: "gasolinacontraalcool.firebasestorage.app",
+      messagingSenderId: "152329793014",
+      appId: "1:152329793014:web:befb36fc01e8bfd9bbabd7",
+      measurementId: "G-8EVQ85MP96"
+    };
+
+    // Initialize Firebase
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
     // Constants for Ford Fiesta 1.6 8V Flex
     const KM_L_ETHANOL = 8.6;
     const KM_L_GASOLINE = 12.4;
@@ -1069,19 +1088,6 @@
     init();
 
     function init() {
-      // Load History and Refuels
-      const savedHistory = localStorage.getItem('fiestafuel_history');
-      if (savedHistory) {
-        history = JSON.parse(savedHistory);
-        renderHistory();
-      }
-
-      const savedRefuels = localStorage.getItem('fiestafuel_refuels');
-      if (savedRefuels) {
-        refuels = JSON.parse(savedRefuels);
-        renderRefuels();
-      }
-
       // Input Focus UI adjustments
       setupInputFocus(inputEthanol, cardEthanol, 'focused-ethanol');
       setupInputFocus(inputGasoline, cardGasoline, 'focused-gasoline');
@@ -1162,14 +1168,60 @@
       btnClearCalculations.addEventListener('click', () => {
         triggerHaptic();
         history = [];
-        localStorage.removeItem('fiestafuel_history');
         renderHistory();
       });
       
-      btnClearRefuels.addEventListener('click', () => {
+      btnClearRefuels.addEventListener('click', async () => {
         triggerHaptic();
+        if (confirm("Deseja realmente limpar todos os registros de abastecimento do banco de dados?")) {
+          try {
+            const querySnapshot = await getDocs(collection(db, "abastecimentos"));
+            const deletePromises = [];
+            querySnapshot.forEach((document) => {
+              deletePromises.push(deleteDoc(doc(db, "abastecimentos", document.id)));
+            });
+            await Promise.all(deletePromises);
+            alert("Banco de dados limpo com sucesso!");
+          } catch (e) {
+            console.error("Erro ao limpar banco:", e);
+            alert("Erro ao limpar registros.");
+          }
+        }
+      });
+
+      // Initialize real-time sync with database
+      initFirestoreListener();
+    }
+
+    function initFirestoreListener() {
+      const q = query(collection(db, "abastecimentos"), orderBy("data", "desc"));
+      onSnapshot(q, (snapshot) => {
         refuels = [];
-        localStorage.removeItem('fiestafuel_refuels');
+        snapshot.forEach((doc) => {
+          const data = doc.data();
+          
+          // Format Firestore timestamp
+          const dateObj = data.data && typeof data.data.toDate === 'function' ? data.data.toDate() : new Date();
+          const dateString = dateObj.toLocaleDateString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+          
+          // Calculations from Firestore document
+          const isEthanol = data.resultadoVantagem === 'ethanol';
+          const price = isEthanol ? data.precoAlcool : data.precoGasolina;
+          const consumption = isEthanol ? KM_L_ETHANOL : KM_L_GASOLINE;
+          const liters = data.valorAbastecido / price;
+          const estimatedKm = liters * consumption;
+          
+          refuels.push({
+            id: doc.id,
+            fuelType: data.resultadoVantagem,
+            amount: data.valorAbastecido,
+            price: price,
+            liters: liters,
+            estimatedKm: estimatedKm,
+            date: dateString
+          });
+        });
+        
         renderRefuels();
       });
     }
@@ -1327,47 +1379,49 @@
       }
     }
 
-    // Refuel Saving Logic
-    function saveRefuelLog() {
+    // Refuel Saving Logic pointing to Firebase Firestore
+    async function saveRefuelLog() {
       const amount = parsePrice(inputRefuelAmount.value);
       if (amount <= 0) {
         alert("Por favor, digite um valor de abastecimento válido.");
         return;
       }
 
-      const fuelPriceVal = selectedRefuelFuel === 'ethanol' ? ethanolPrice : gasolinePrice;
-      if (fuelPriceVal <= 0) {
+      if (ethanolPrice <= 0 || gasolinePrice <= 0) {
         alert("Por favor, calcule a vantagem antes de registrar o abastecimento.");
         return;
       }
 
-      const consumption = selectedRefuelFuel === 'ethanol' ? KM_L_ETHANOL : KM_L_GASOLINE;
-      const liters = amount / fuelPriceVal;
-      const estimatedKm = liters * consumption;
+      const costKmAlcool = ethanolPrice / KM_L_ETHANOL;
+      const costKmGasolina = gasolinePrice / KM_L_GASOLINE;
+      const outcome = costKmAlcool < costKmGasolina ? 'ethanol' : 'gasoline';
 
-      const newRefuel = {
-        id: Date.now(),
-        fuelType: selectedRefuelFuel,
-        amount: amount,
-        price: fuelPriceVal,
-        liters: liters,
-        estimatedKm: estimatedKm,
-        date: new Date().toLocaleDateString('pt-BR', { hour: '2-digit', minute: '2-digit' })
-      };
+      try {
+        await addDoc(collection(db, "abastecimentos"), {
+          data: new Date(),
+          precoAlcool: ethanolPrice,
+          precoGasolina: gasolinePrice,
+          custoKmAlcool: costKmAlcool,
+          custoKmGasolina: costKmGasolina,
+          resultadoVantagem: outcome,
+          valorAbastecido: amount
+        });
 
-      refuels.unshift(newRefuel);
-      localStorage.setItem('fiestafuel_refuels', JSON.stringify(refuels));
+        alert("Salvo no banco com sucesso!");
 
-      // Reset Input
-      inputRefuelAmount.value = "";
+        // Reset Input
+        inputRefuelAmount.value = "";
 
-      renderRefuels();
-      switchTab('refuels');
+        switchTab('refuels');
 
-      // Scroll list into view
-      setTimeout(() => {
-        document.getElementById('tab-refuels').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-      }, 150);
+        // Scroll list into view
+        setTimeout(() => {
+          document.getElementById('tab-refuels').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }, 150);
+      } catch (e) {
+        console.error("Erro ao salvar no Firestore: ", e);
+        alert("Erro ao salvar abastecimento no banco de dados.");
+      }
     }
 
     function renderRefuels() {
@@ -1419,13 +1473,17 @@
       });
     }
 
-    function deleteRefuelItem(id) {
-      refuels = refuels.filter(item => item.id !== id);
-      localStorage.setItem('fiestafuel_refuels', JSON.stringify(refuels));
-      renderRefuels();
+    async function deleteRefuelItem(id) {
+      if (typeof id === 'string') {
+        try {
+          await deleteDoc(doc(db, "abastecimentos", id));
+        } catch (e) {
+          console.error("Erro ao excluir do Firestore: ", e);
+        }
+      }
     }
 
-    // History Logs Logic
+    // History Logs Logic (In-memory session log)
     function saveToHistory() {
       const newEntry = {
         id: Date.now(),
@@ -1450,7 +1508,6 @@
         history.pop();
       }
 
-      localStorage.setItem('fiestafuel_history', JSON.stringify(history));
       renderHistory();
     }
 
@@ -1510,7 +1567,6 @@
 
     function deleteHistoryItem(id) {
       history = history.filter(item => item.id !== id);
-      localStorage.setItem('fiestafuel_history', JSON.stringify(history));
       renderHistory();
     }
 
@@ -1519,15 +1575,6 @@
       if ('vibrate' in navigator) {
         navigator.vibrate(15);
       }
-    }
-
-    // Register Service Worker
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('sw.js')
-          .then(reg => console.log('FiestaFuel Service Worker registrado:', reg.scope))
-          .catch(err => console.error('Erro no registro do Service Worker:', err));
-      });
     }
   </script>
 </body>
