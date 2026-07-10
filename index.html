@@ -1,0 +1,1070 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <!-- iOS Safari PWA Meta Tags -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="FiestaFuel">
+  
+  <title>FiestaFuel - Rodoviário Fiesta 1.6</title>
+  
+  <!-- Manifest & Apple Icons -->
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='180' height='180' viewBox='0 0 180 180'><rect width='180' height='180' rx='40' fill='%23090D16'/><path d='M40 70 C40 50, 60 40, 90 40 C120 40, 140 50, 140 70 L140 120 C140 130, 130 140, 120 140 L60 140 C50 140, 40 130, 40 120 Z' fill='none' stroke='%233B82F6' stroke-width='10'/><circle cx='65' cy='115' r='12' fill='%2310B981'/><circle cx='115' cy='115' r='12' fill='%23F59E0B'/><path d='M90 60 L90 85 L105 85 L90 105 L90 85 L75 85 Z' fill='%233B82F6'/></svg>">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%23090D16'/><circle cx='50' cy='50' r='30' fill='none' stroke='%233B82F6' stroke-width='8'/><path d='M50 32 L50 50 L62 50' fill='none' stroke='%2310B981' stroke-width='6' stroke-linecap='round'/></svg>">
+  
+  <style>
+    /* iOS Custom Styling Variables */
+    :root {
+      --bg-dark: #090D16;
+      --bg-card: rgba(20, 26, 38, 0.65);
+      --bg-card-active: rgba(28, 36, 52, 0.85);
+      --border-light: rgba(255, 255, 255, 0.08);
+      --text-white: #FFFFFF;
+      --text-gray: #8A99AD;
+      --color-ethanol: #10B981;
+      --color-ethanol-glow: rgba(16, 185, 129, 0.2);
+      --color-gasoline: #F59E0B;
+      --color-gasoline-glow: rgba(245, 158, 11, 0.2);
+      --color-blue: #3B82F6;
+      --color-blue-glow: rgba(59, 130, 246, 0.35);
+      --font-ios: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-user-select: none;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      font-family: var(--font-ios);
+      background-color: var(--bg-dark);
+      color: var(--text-white);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow-x: hidden;
+      overflow-y: auto;
+      overscroll-behavior-y: contain;
+      padding-top: max(16px, env(safe-area-inset-top));
+      padding-bottom: max(24px, env(safe-area-inset-bottom));
+      padding-left: max(16px, env(safe-area-inset-left));
+      padding-right: max(16px, env(safe-area-inset-right));
+      background-image: 
+        radial-gradient(circle at 0% 0%, rgba(59, 130, 246, 0.12) 0%, transparent 45%),
+        radial-gradient(circle at 100% 100%, rgba(16, 185, 129, 0.08) 0%, transparent 45%);
+      background-attachment: fixed;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 480px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    /* iOS Blurred Header */
+    header {
+      display: flex;
+      flex-direction: column;
+      padding: 12px 4px 4px 4px;
+    }
+
+    .brand-title {
+      font-size: 1.6rem;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      background: linear-gradient(135deg, #FFFFFF 0%, #A5B4FC 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .brand-title svg {
+      width: 28px;
+      height: 28px;
+      stroke: var(--color-blue);
+      fill: none;
+      stroke-width: 2.2;
+    }
+
+    .brand-subtitle {
+      font-size: 0.85rem;
+      color: var(--text-gray);
+      font-weight: 500;
+      margin-top: 2px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .brand-subtitle span {
+      background: rgba(59, 130, 246, 0.15);
+      color: #60A5FA;
+      padding: 2px 6px;
+      border-radius: 6px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+
+    /* Specs Widget Card */
+    .specs-card {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px dashed var(--border-light);
+      border-radius: 20px;
+      padding: 14px 18px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .specs-header {
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: var(--text-gray);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .specs-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .spec-item {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .spec-item-label {
+      font-size: 0.75rem;
+      color: var(--text-gray);
+    }
+
+    .spec-item-value {
+      font-size: 1.1rem;
+      font-weight: 700;
+      display: flex;
+      align-items: baseline;
+      gap: 3px;
+    }
+
+    .spec-item-value.ethanol {
+      color: var(--color-ethanol);
+    }
+
+    .spec-item-value.gasoline {
+      color: var(--color-gasoline);
+    }
+
+    .spec-item-unit {
+      font-size: 0.75rem;
+      font-weight: 500;
+      color: var(--text-gray);
+    }
+
+    /* Fuel Input Cards */
+    .card {
+      background: var(--bg-card);
+      backdrop-filter: blur(20px) saturate(180%);
+      -webkit-backdrop-filter: blur(20px) saturate(180%);
+      border: 1px solid var(--border-light);
+      border-radius: 24px;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      transition: transform 0.2s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .card.focused-ethanol {
+      border-color: rgba(16, 185, 129, 0.4);
+      box-shadow: 0 0 20px var(--color-ethanol-glow);
+    }
+
+    .card.focused-gasoline {
+      border-color: rgba(245, 158, 11, 0.4);
+      box-shadow: 0 0 20px var(--color-gasoline-glow);
+    }
+
+    .card-label {
+      font-size: 0.85rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .ethanol-label {
+      color: var(--color-ethanol);
+    }
+
+    .gasoline-label {
+      color: var(--color-gasoline);
+    }
+
+    .input-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+
+    .currency-symbol {
+      font-size: 1.6rem;
+      font-weight: 700;
+      color: var(--text-gray);
+      margin-right: 6px;
+    }
+
+    .price-input {
+      background: transparent;
+      border: none;
+      outline: none;
+      color: var(--text-white);
+      font-size: 3rem;
+      font-weight: 800;
+      text-align: center;
+      width: 190px;
+      font-family: inherit;
+      -webkit-user-select: text;
+      user-select: text;
+      caret-color: var(--color-blue);
+    }
+
+    .price-input::placeholder {
+      color: rgba(255, 255, 255, 0.15);
+    }
+
+    /* Small Adjustments Keyboard buttons */
+    .adjustments {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+      margin-top: 4px;
+    }
+
+    .btn-adjust {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--border-light);
+      border-radius: 12px;
+      padding: 8px 4px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--text-white);
+      cursor: pointer;
+      transition: transform 0.1s cubic-bezier(0.25, 0.8, 0.25, 1), background-color 0.15s ease;
+    }
+
+    .btn-adjust:active {
+      transform: scale(0.9);
+      background-color: rgba(255, 255, 255, 0.1);
+    }
+
+    /* Main Action Button */
+    .btn-calculate {
+      background: linear-gradient(135deg, var(--color-blue) 0%, #4F46E5 100%);
+      border: none;
+      border-radius: 20px;
+      padding: 18px;
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: var(--text-white);
+      cursor: pointer;
+      text-align: center;
+      box-shadow: 0 4px 15px var(--color-blue-glow);
+      transition: transform 0.1s cubic-bezier(0.25, 0.8, 0.25, 1), box-shadow 0.2s ease;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn-calculate:active {
+      transform: scale(0.96);
+      box-shadow: 0 2px 8px var(--color-blue-glow);
+    }
+
+    .btn-calculate svg {
+      width: 20px;
+      height: 20px;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 2.2;
+    }
+
+    /* Results Card */
+    .result-card {
+      display: none; /* Controlled via JS */
+      opacity: 0;
+      transform: translateY(20px);
+      transition: opacity 0.4s ease, transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+      flex-direction: column;
+      gap: 16px;
+      text-align: center;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+    }
+
+    .result-card.show {
+      display: flex;
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .result-header {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .result-badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 8px 18px;
+      border-radius: 30px;
+      font-size: 0.85rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      border: 1px solid var(--border-light);
+    }
+
+    .result-badge.ethanol {
+      background: rgba(16, 185, 129, 0.15);
+      color: var(--color-ethanol);
+      border-color: rgba(16, 185, 129, 0.3);
+      box-shadow: 0 0 15px rgba(16, 185, 129, 0.1);
+    }
+
+    .result-badge.gasoline {
+      background: rgba(245, 158, 11, 0.15);
+      color: var(--color-gasoline);
+      border-color: rgba(245, 158, 11, 0.3);
+      box-shadow: 0 0 15px rgba(245, 158, 11, 0.1);
+    }
+
+    .result-title {
+      font-size: 2rem;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+    }
+
+    /* Comparison Table/Display */
+    .cost-comparison-container {
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid var(--border-light);
+      border-radius: 18px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .cost-comparison-title {
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: var(--text-gray);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .cost-comparison-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+
+    .cost-item {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      padding: 10px;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid transparent;
+    }
+
+    .cost-item.winner-ethanol {
+      border-color: rgba(16, 185, 129, 0.2);
+      background: rgba(16, 185, 129, 0.04);
+    }
+
+    .cost-item.winner-gasoline {
+      border-color: rgba(245, 158, 11, 0.2);
+      background: rgba(245, 158, 11, 0.04);
+    }
+
+    .cost-item-label {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text-gray);
+    }
+
+    .cost-item-val {
+      font-size: 1.25rem;
+      font-weight: 800;
+    }
+
+    .cost-item-val span {
+      font-size: 0.75rem;
+      font-weight: 500;
+      color: var(--text-gray);
+    }
+
+    .comparison-summary {
+      font-size: 0.88rem;
+      color: var(--text-gray);
+      line-height: 1.4;
+      padding: 0 4px;
+    }
+
+    .comparison-summary strong {
+      color: var(--text-white);
+    }
+
+    /* Trip Simulator Widget */
+    .trip-simulator {
+      background: rgba(59, 130, 246, 0.04);
+      border: 1px dashed rgba(59, 130, 246, 0.2);
+      border-radius: 18px;
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      text-align: left;
+    }
+
+    .trip-sim-label {
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--color-blue);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .trip-sim-label span.distance-display {
+      color: var(--text-white);
+    }
+
+    .trip-slider {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 100%;
+      height: 6px;
+      border-radius: 3px;
+      background: rgba(255, 255, 255, 0.1);
+      outline: none;
+      margin: 4px 0;
+    }
+
+    .trip-slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: #FFFFFF;
+      border: 2px solid var(--color-blue);
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+      cursor: pointer;
+    }
+
+    .trip-sim-savings {
+      font-size: 1.15rem;
+      font-weight: 800;
+      color: var(--text-white);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .trip-sim-savings-pill {
+      background: rgba(16, 185, 129, 0.15);
+      border: 1px solid rgba(16, 185, 129, 0.25);
+      color: var(--color-ethanol);
+      font-size: 1.1rem;
+      font-weight: 800;
+      padding: 4px 10px;
+      border-radius: 10px;
+    }
+
+    .trip-sim-savings-pill.gasoline {
+      background: rgba(245, 158, 11, 0.15);
+      border: 1px solid rgba(245, 158, 11, 0.25);
+      color: var(--color-gasoline);
+    }
+
+    /* History Logs */
+    .history-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 6px 4px 0 4px;
+    }
+
+    .history-title {
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: var(--text-gray);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .btn-clear {
+      background: transparent;
+      border: none;
+      color: var(--text-gray);
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .history-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .history-item {
+      background: var(--bg-card);
+      border: 1px solid var(--border-light);
+      border-radius: 16px;
+      padding: 12px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      cursor: pointer;
+      transition: transform 0.1s ease, background-color 0.2s ease;
+    }
+
+    .history-item:active {
+      transform: scale(0.98);
+      background-color: var(--bg-card-active);
+    }
+
+    .history-item-left {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .history-item-prices {
+      font-size: 0.9rem;
+      font-weight: 700;
+    }
+
+    .history-item-details {
+      font-size: 0.72rem;
+      color: var(--text-gray);
+    }
+
+    .history-item-right {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .history-badge {
+      font-size: 0.68rem;
+      font-weight: 800;
+      padding: 4px 8px;
+      border-radius: 8px;
+      text-transform: uppercase;
+    }
+
+    .history-badge.ethanol {
+      background: rgba(16, 185, 129, 0.12);
+      color: var(--color-ethanol);
+      border: 1px solid rgba(16, 185, 129, 0.2);
+    }
+
+    .history-badge.gasoline {
+      background: rgba(245, 158, 11, 0.12);
+      color: var(--color-gasoline);
+      border: 1px solid rgba(245, 158, 11, 0.2);
+    }
+
+    .history-empty {
+      text-align: center;
+      padding: 24px;
+      color: var(--text-gray);
+      font-size: 0.85rem;
+      background: rgba(255, 255, 255, 0.01);
+      border: 1px dashed var(--border-light);
+      border-radius: 16px;
+    }
+
+    .history-delete {
+      color: var(--text-gray);
+      background: transparent;
+      border: none;
+      padding: 4px;
+      cursor: pointer;
+    }
+
+    .history-delete:active {
+      color: #EF4444;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    
+    <header>
+      <div class="brand-title">
+        <svg viewBox="0 0 24 24">
+          <path d="M19 18h2v-8h-2zM3 18h2v-8H3z M6 18h12v-10h-12zM9 10h6v3h-6z" />
+          <circle cx="7" cy="18" r="2" fill="currentColor"/>
+          <circle cx="17" cy="18" r="2" fill="currentColor"/>
+        </svg>
+        FiestaFuel
+      </div>
+      <div class="brand-subtitle">
+        Calibrado para <span>Fiesta 1.6 8V Flex</span>
+      </div>
+    </header>
+
+    <!-- Specs Dashboard Widget -->
+    <div class="specs-card">
+      <div class="specs-header">Consumo Rodoviário Estabelecido</div>
+      <div class="specs-grid">
+        <div class="spec-item">
+          <span class="spec-item-label">Álcool</span>
+          <span class="spec-item-value ethanol">
+            8,6 <span class="spec-item-unit">km/L</span>
+          </span>
+        </div>
+        <div class="spec-item">
+          <span class="spec-item-label">Gasolina</span>
+          <span class="spec-item-value gasoline">
+            12,4 <span class="spec-item-unit">km/L</span>
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Ethanol Input Card -->
+    <div class="card" id="card-ethanol">
+      <div class="card-label ethanol-label">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="12" y1="2" x2="12" y2="22"></line>
+          <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+        </svg>
+        Preço do Álcool (L)
+      </div>
+      <div class="input-row">
+        <span class="currency-symbol">R$</span>
+        <input type="text" id="input-ethanol" class="price-input" placeholder="0,00" inputmode="decimal" autocomplete="off" spellcheck="false">
+      </div>
+      <div class="adjustments">
+        <button class="btn-adjust" data-target="ethanol" data-value="-0.10">-0,10</button>
+        <button class="btn-adjust" data-target="ethanol" data-value="-0.01">-0,01</button>
+        <button class="btn-adjust" data-target="ethanol" data-value="0.01">+0,01</button>
+        <button class="btn-adjust" data-target="ethanol" data-value="0.10">+0,10</button>
+      </div>
+    </div>
+
+    <!-- Gasoline Input Card -->
+    <div class="card" id="card-gasoline">
+      <div class="card-label gasoline-label">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="12" y1="2" x2="12" y2="22"></line>
+          <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+        </svg>
+        Preço da Gasolina (L)
+      </div>
+      <div class="input-row">
+        <span class="currency-symbol">R$</span>
+        <input type="text" id="input-gasoline" class="price-input" placeholder="0,00" inputmode="decimal" autocomplete="off" spellcheck="false">
+      </div>
+      <div class="adjustments">
+        <button class="btn-adjust" data-target="gasoline" data-value="-0.10">-0,10</button>
+        <button class="btn-adjust" data-target="gasoline" data-value="-0.01">-0,01</button>
+        <button class="btn-adjust" data-target="gasoline" data-value="0.01">+0,01</button>
+        <button class="btn-adjust" data-target="gasoline" data-value="0.10">+0,10</button>
+      </div>
+    </div>
+
+    <!-- Calculate Button -->
+    <button class="btn-calculate" id="btn-calc">
+      <svg viewBox="0 0 24 24">
+        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+        <polyline points="22 4 12 14.01 9 11.01"></polyline>
+      </svg>
+      Calcular Vantagem
+    </button>
+
+    <!-- Results Panel -->
+    <div class="card result-card" id="result-card">
+      <div class="result-header">
+        <span class="result-badge" id="result-badge">Vencedor</span>
+        <div class="result-title" id="result-title">Combustível</div>
+      </div>
+
+      <!-- Cost Comparison Grid -->
+      <div class="cost-comparison-container">
+        <div class="cost-comparison-title">Custo Real por Quilômetro Rodado</div>
+        <div class="cost-comparison-grid">
+          <div class="cost-item" id="cost-item-ethanol">
+            <span class="cost-item-label">Álcool</span>
+            <span class="cost-item-val" id="cost-val-ethanol">R$ 0,00 <span>/km</span></span>
+          </div>
+          <div class="cost-item" id="cost-item-gasoline">
+            <span class="cost-item-label">Gasolina</span>
+            <span class="cost-item-val" id="cost-val-gasoline">R$ 0,00 <span>/km</span></span>
+          </div>
+        </div>
+      </div>
+
+      <div class="comparison-summary" id="comparison-summary">
+        Resumo do cálculo.
+      </div>
+
+      <!-- Highway Trip Savings Simulator -->
+      <div class="trip-simulator">
+        <div class="trip-sim-label">
+          <span>Simulador de Viagem Rodoviária</span>
+          <span class="distance-display" id="distance-display">200 km</span>
+        </div>
+        <input type="range" class="trip-slider" id="trip-slider" min="50" max="1000" value="200" step="50">
+        <div class="trip-sim-savings">
+          <span>Economia Estimada:</span>
+          <span class="trip-sim-savings-pill" id="trip-savings-pill">R$ 0,00</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- History Logs -->
+    <div class="history-header">
+      <span class="history-title">Calculações Salvas</span>
+      <button class="btn-clear" id="btn-clear" style="display: none;">Limpar Tudo</button>
+    </div>
+    <div class="history-list" id="history-container">
+      <div class="history-empty">Nenhum histórico disponível.</div>
+    </div>
+
+  </div>
+
+  <script>
+    // Constants for Ford Fiesta 1.6 8V Flex
+    const KM_L_ETHANOL = 8.6;
+    const KM_L_GASOLINE = 12.4;
+
+    // App State
+    let ethanolPrice = 0;
+    let gasolinePrice = 0;
+    let tripDistance = 200; // default trip km
+    let history = [];
+
+    // Cache elements
+    const inputEthanol = document.getElementById('input-ethanol');
+    const inputGasoline = document.getElementById('input-gasoline');
+    const cardEthanol = document.getElementById('card-ethanol');
+    const cardGasoline = document.getElementById('card-gasoline');
+    const btnCalc = document.getElementById('btn-calc');
+    
+    const resultCard = document.getElementById('result-card');
+    const resultBadge = document.getElementById('result-badge');
+    const resultTitle = document.getElementById('result-title');
+    const costValEthanol = document.getElementById('cost-val-ethanol');
+    const costValGasoline = document.getElementById('cost-val-gasoline');
+    const costItemEthanol = document.getElementById('cost-item-ethanol');
+    const costItemGasoline = document.getElementById('cost-item-gasoline');
+    const comparisonSummary = document.getElementById('comparison-summary');
+    
+    const tripSlider = document.getElementById('trip-slider');
+    const distanceDisplay = document.getElementById('distance-display');
+    const tripSavingsPill = document.getElementById('trip-savings-pill');
+    
+    const historyContainer = document.getElementById('history-container');
+    const btnClearHistory = document.getElementById('btn-clear');
+
+    init();
+
+    function init() {
+      // Load History
+      const savedHistory = localStorage.getItem('fiestafuel_history');
+      if (savedHistory) {
+        history = JSON.parse(savedHistory);
+        renderHistory();
+      }
+
+      // Input Focus UI adjustments
+      setupInputFocus(inputEthanol, cardEthanol, 'focused-ethanol');
+      setupInputFocus(inputGasoline, cardGasoline, 'focused-gasoline');
+
+      // Parsing numeric values
+      setupNumericInput(inputEthanol, (val) => {
+        ethanolPrice = val;
+      });
+      setupNumericInput(inputGasoline, (val) => {
+        gasolinePrice = val;
+      });
+
+      // Adjustment buttons (+/- cents)
+      document.querySelectorAll('.btn-adjust').forEach(btn => {
+        btn.addEventListener('click', () => {
+          triggerHaptic();
+          const target = btn.dataset.target;
+          const delta = parseFloat(btn.dataset.value);
+          
+          if (target === 'ethanol') {
+            ethanolPrice = Math.max(0, parseFloat((ethanolPrice + delta).toFixed(2)));
+            inputEthanol.value = formatPriceValue(ethanolPrice);
+          } else if (target === 'gasoline') {
+            gasolinePrice = Math.max(0, parseFloat((gasolinePrice + delta).toFixed(2)));
+            inputGasoline.value = formatPriceValue(gasolinePrice);
+          }
+        });
+      });
+
+      // Calculate Button
+      btnCalc.addEventListener('click', () => {
+        triggerHaptic();
+        if (ethanolPrice <= 0 || gasolinePrice <= 0) {
+          alert("Por favor, digite os valores do Álcool e da Gasolina.");
+          return;
+        }
+        calculate();
+        saveToHistory();
+      });
+
+      // Trip Simulator Slider
+      tripSlider.addEventListener('input', (e) => {
+        tripDistance = parseInt(e.target.value, 10);
+        distanceDisplay.textContent = tripDistance + " km";
+        updateTripSavings();
+      });
+
+      // Clear History
+      btnClearHistory.addEventListener('click', () => {
+        triggerHaptic();
+        history = [];
+        localStorage.removeItem('fiestafuel_history');
+        renderHistory();
+      });
+    }
+
+    function setupInputFocus(inputEl, cardEl, focusClass) {
+      inputEl.addEventListener('focus', () => {
+        cardEl.classList.add(focusClass);
+      });
+      inputEl.addEventListener('blur', () => {
+        cardEl.classList.remove(focusClass);
+      });
+    }
+
+    function setupNumericInput(inputEl, callback) {
+      inputEl.addEventListener('input', (e) => {
+        let valString = e.target.value;
+        // Accept commas and dots, replace comma with dot
+        let clean = valString.replace(',', '.');
+        // Filter multiple dots
+        let dots = (clean.match(/\./g) || []).length;
+        if (dots > 1) {
+          clean = clean.substring(0, clean.lastIndexOf('.'));
+        }
+        // Filter non-numeric characters
+        clean = clean.replace(/[^0-9.]/g, '');
+        
+        inputEl.value = clean;
+        const val = parseFloat(clean);
+        callback(isNaN(val) ? 0 : val);
+      });
+    }
+
+    function formatPriceValue(val) {
+      if (val === 0) return "";
+      return val.toFixed(2).replace('.', ',');
+    }
+
+    // Core Calculation Logic
+    let costPerKmEthanol = 0;
+    let costPerKmGasoline = 0;
+    let winner = '';
+
+    function calculate() {
+      // Calculate costs per kilometer
+      costPerKmEthanol = ethanolPrice / KM_L_ETHANOL;
+      costPerKmGasoline = gasolinePrice / KM_L_GASOLINE;
+
+      // Determine Winner
+      winner = costPerKmEthanol < costPerKmGasoline ? 'ethanol' : 'gasoline';
+
+      // Show Result Card
+      resultCard.classList.add('show');
+
+      // Update Card Visuals
+      if (winner === 'ethanol') {
+        resultBadge.className = "result-badge ethanol";
+        resultBadge.textContent = "Álcool Venceu";
+        resultTitle.textContent = "Abasteça com Álcool";
+        resultTitle.style.color = "var(--color-ethanol)";
+        
+        costItemEthanol.className = "cost-item winner-ethanol";
+        costItemGasoline.className = "cost-item";
+      } else {
+        resultBadge.className = "result-badge gasoline";
+        resultBadge.textContent = "Gasolina Venceu";
+        resultTitle.textContent = "Abasteça com Gasolina";
+        resultTitle.style.color = "var(--color-gasoline)";
+        
+        costItemEthanol.className = "cost-item";
+        costItemGasoline.className = "cost-item winner-gasoline";
+      }
+
+      // Display actual costs per km
+      costValEthanol.innerHTML = `R$ ${costPerKmEthanol.toFixed(3).replace('.', ',')} <span>/km</span>`;
+      costValGasoline.innerHTML = `R$ ${costPerKmGasoline.toFixed(3).replace('.', ',')} <span>/km</span>`;
+
+      // Update Summary Text
+      const ratio = (ethanolPrice / gasolinePrice) * 100;
+      const relationText = ratio.toFixed(1) + "%";
+      const savingsPerKm = Math.abs(costPerKmGasoline - costPerKmEthanol);
+      
+      comparisonSummary.innerHTML = `Nesta relação, o álcool equivale a <strong>${relationText}</strong> do preço da gasolina. O custo por quilômetro com álcool é <strong>R$ ${costPerKmEthanol.toFixed(2).replace('.', ',')}</strong>, enquanto com gasolina é de <strong>R$ ${costPerKmGasoline.toFixed(2).replace('.', ',')}</strong>.`;
+
+      // Update trip simulator pill styling & calculations
+      updateTripSavings();
+
+      // Smooth scroll down to result card on iOS
+      setTimeout(() => {
+        resultCard.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }, 100);
+    }
+
+    function updateTripSavings() {
+      if (costPerKmEthanol <= 0 || costPerKmGasoline <= 0) return;
+      
+      const diff = Math.abs(costPerKmGasoline - costPerKmEthanol);
+      const totalSavings = diff * tripDistance;
+      
+      tripSavingsPill.textContent = `R$ ${totalSavings.toFixed(2).replace('.', ',')}`;
+
+      if (winner === 'ethanol') {
+        tripSavingsPill.className = "trip-sim-savings-pill";
+      } else {
+        tripSavingsPill.className = "trip-sim-savings-pill gasoline";
+      }
+    }
+
+    // History Logs Logic
+    function saveToHistory() {
+      const newEntry = {
+        id: Date.now(),
+        ethanol: ethanolPrice,
+        gasoline: gasolinePrice,
+        winner: winner,
+        costEthanol: costPerKmEthanol,
+        costGasoline: costPerKmGasoline,
+        date: new Date().toLocaleDateString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+      };
+
+      // Prevent duplicate consecutive entries
+      if (history.length > 0) {
+        const last = history[0];
+        if (last.ethanol === newEntry.ethanol && last.gasoline === newEntry.gasoline) {
+          return;
+        }
+      }
+
+      history.unshift(newEntry);
+      
+      if (history.length > 5) {
+        history.pop();
+      }
+
+      localStorage.setItem('fiestafuel_history', JSON.stringify(history));
+      renderHistory();
+    }
+
+    function renderHistory() {
+      if (history.length === 0) {
+        historyContainer.innerHTML = '<div class="history-empty">Nenhum histórico disponível.</div>';
+        btnClearHistory.style.display = 'none';
+        return;
+      }
+
+      btnClearHistory.style.display = 'block';
+      historyContainer.innerHTML = '';
+
+      history.forEach(item => {
+        const div = document.createElement('div');
+        div.className = 'history-item';
+        
+        // Tap to reload values
+        div.addEventListener('click', (e) => {
+          if (e.target.closest('.history-delete')) return;
+          triggerHaptic();
+          ethanolPrice = item.ethanol;
+          gasolinePrice = item.gasoline;
+          
+          inputEthanol.value = formatPriceValue(ethanolPrice);
+          inputGasoline.value = formatPriceValue(gasolinePrice);
+          calculate();
+        });
+
+        const recText = item.winner === 'ethanol' ? 'Álcool' : 'Gasolina';
+        const badgeClass = item.winner;
+
+        div.innerHTML = `
+          <div class="history-item-left">
+            <div class="history-item-prices">A: R$ ${item.ethanol.toFixed(2).replace('.', ',')} | G: R$ ${item.gasoline.toFixed(2).replace('.', ',')}</div>
+            <div class="history-item-details">Custo/km: A: R$ ${item.costEthanol.toFixed(2).replace('.', ',')} vs G: R$ ${item.costGasoline.toFixed(2).replace('.', ',')} • ${item.date}</div>
+          </div>
+          <div class="history-item-right">
+            <span class="history-badge ${badgeClass}">${recText}</span>
+            <button class="history-delete" aria-label="Excluir">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="3 6 5 6 21 6"></polyline>
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+              </svg>
+            </button>
+          </div>
+        `;
+
+        div.querySelector('.history-delete').addEventListener('click', (e) => {
+          e.stopPropagation();
+          triggerHaptic();
+          deleteHistoryItem(item.id);
+        });
+
+        historyContainer.appendChild(div);
+      });
+    }
+
+    function deleteHistoryItem(id) {
+      history = history.filter(item => item.id !== id);
+      localStorage.setItem('fiestafuel_history', JSON.stringify(history));
+      renderHistory();
+    }
+
+    // iOS Soft tactile vibration feedback
+    function triggerHaptic() {
+      if ('vibrate' in navigator) {
+        navigator.vibrate(15);
+      }
+    }
+
+  </script>
+</body>
+</html>
